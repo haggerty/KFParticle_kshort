@@ -1,0 +1,19 @@
+# ROOT data and output files
+*.root
+*.list
+
+# PDF plots
+*.pdf
+
+# ACLiC compiled macro artifacts
+*.so
+*.d
+*.pcm
+
+# Condor logs and generated job list
+condorlogs/
+condor/condor.list
+
+# macOS metadata
+._*
+.DS_Store
