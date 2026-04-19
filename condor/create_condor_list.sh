@@ -2,16 +2,14 @@
 # Generates condor.list for Fun4All_KShortReco_run3pp condor submission.
 #
 # Usage:
-#   ./create_condor_list.sh [lustre_dst_dir] [output_dir] [max_jobs]
+#   ./create_condor_list.sh [max_jobs]
 #
-# Defaults:
-#   lustre_dst_dir : /sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS
-#   output_dir     : /sphenix/user/$USER/KShort_run3pp
-#   max_jobs       : 0 (no limit)
+# The DST and output paths are hardcoded to their standard locations.
+# max_jobs defaults to 0 (no limit).
 
-DST_BASE=${1:-/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS}
-OUTDIR=${2:-/sphenix/user/$(whoami)/analysis/2026-03-23/KShort_run3pp}
-MAX_JOBS=${3:-0}
+MAX_JOBS=${1:-0}
+DST_BASE=/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS
+OUTDIR=/sphenix/user/$(whoami)/analysis/2026-03-23/KShort_run3pp
 
 this_script=$(readlink -f $0)
 this_dir=$(dirname $this_script)
@@ -27,18 +25,31 @@ echo "Log dir: $LOGDIR ($(ls -d $LOGDIR))"
 
 rm -f condor.list
 
-nfiles=0
-for dstfile in $(find $DST_BASE -name "DST_TRKR_TRACKS_*.root" | sort); do
-    [[ $MAX_JOBS -gt 0 && $nfiles -ge $MAX_JOBS ]] && break
+# Build sorted file list using ls per subdirectory (find is too slow on lustre;
+# glob expansion on 500k-file dirs hits ARG_MAX, so list the dir and grep)
+filelist=$(mktemp)
+for rundir in $DST_BASE/run_*/; do
+    ls -1 "${rundir}" 2>/dev/null \
+        | grep '^DST_TRKR_TRACKS_.*\.root$' \
+        | sed "s|^|${rundir}|"
+done | sort > "$filelist"
 
+# Apply job limit
+if [[ $MAX_JOBS -gt 0 ]]; then
+    head -n $MAX_JOBS "$filelist" > "${filelist}.trim"
+    mv "${filelist}.trim" "$filelist"
+fi
+
+while read dstfile; do
     lfn=$(basename $dstfile)
     outfile=${LOGDIR}/condor-${lfn%.root}.out
     errfile=${LOGDIR}/condor-${lfn%.root}.err
     logfile=/tmp/$(whoami)-condor-${lfn%.root}.log
-
     echo "$dstfile $OUTDIR $outfile $errfile $logfile $this_dir" >> condor.list
-    nfiles=$((nfiles + 1))
-done
+done < "$filelist"
+
+nfiles=$(wc -l < condor.list 2>/dev/null || echo 0)
+rm -f "$filelist"
 
 echo "Created condor.list with $nfiles jobs"
 echo "Submit with: condor_submit condor.job"

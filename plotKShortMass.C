@@ -1,18 +1,13 @@
-void plotKShortMass(const std::string &infile = "root/KShort_run3pp_merged.root")
+void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_run3pp_*.root")
 {
-  TFile *f = TFile::Open(infile.c_str(), "READ");
-  if (!f || f->IsZombie())
+  TChain *tree = new TChain("DecayTree");
+  int nadded = tree->Add(infile.c_str());
+  if (nadded == 0)
   {
-    std::cerr << "Could not open " << infile << std::endl;
+    std::cerr << "No files matched: " << infile << std::endl;
     return;
   }
-
-  TTree *tree = (TTree *) f->Get("DecayTree");
-  if (!tree)
-  {
-    std::cerr << "DecayTree not found in " << infile << std::endl;
-    return;
-  }
+  std::cout << "Chained " << nadded << " files, " << tree->GetEntries() << " entries" << std::endl;
 
   TCanvas *c = new TCanvas("c_kshort_mass", "K_{S}^{0} Mass", 800, 600);
   c->SetLeftMargin(0.12);
@@ -37,7 +32,6 @@ void plotKShortMass(const std::string &infile = "root/KShort_run3pp_merged.root"
   leg->AddEntry(pdg, "PDG K_{S}^{0}", "l");
   leg->Draw();
 
-  std::string pdfname = infile.substr(0, infile.rfind('.')) + "_mass.pdf";
-  c->SaveAs(pdfname.c_str());
+  c->SaveAs("KShort_run3pp_mass.pdf");
   std::cout << "Entries: " << tree->GetEntries() << std::endl;
 }
