@@ -1,55 +1,54 @@
-void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_run3pp_*.root",
-                    const std::string &tag    = "KShort_run3pp_10k")
+// Plot K_S0 mass from a pre-filled histogram file produced by fillKShortHists.C.
+// Fast: no TChain — just fit and draw.
+//
+// Usage:
+//   root -b -q 'plotKShortMass.C("KShort_hists.root","KShort_run3pp_10k")'
+
+void plotKShortMass(const std::string &histfile = "KShort_hists.root",
+                    const std::string &tag      = "KShort_run3pp_10k")
 {
-  TChain *tree = new TChain("DecayTree");
-  int nadded = tree->Add(infile.c_str());
-  if (nadded == 0)
+  TFile *fin = TFile::Open(histfile.c_str(), "READ");
+  if (!fin || fin->IsZombie())
   {
-    std::cerr << "No files matched: " << infile << std::endl;
+    std::cerr << "Cannot open " << histfile << std::endl;
     return;
   }
-  std::cout << "Chained " << nadded << " files, " << tree->GetEntries() << " entries" << std::endl;
+  TH1F *h = (TH1F *) fin->Get("h_kshort_mass");
+  if (!h)
+  {
+    std::cerr << "h_kshort_mass not found in " << histfile << std::endl;
+    return;
+  }
+  h->SetDirectory(nullptr);
+  fin->Close();
 
-  const int    nbins    = 80;
-  const double mlo      = 0.300, mhi = 0.700;
   const double fit_lo   = 0.42,  fit_hi = 0.58;
   const double pdg_mass = 0.4976;
-  const double bin_width = (mhi - mlo) / nbins;  // 5 MeV
+  const double bin_width = h->GetBinWidth(1);
 
-  TH1F *h = new TH1F("h_kshort_mass",
-                     Form(";m(#pi^{+}#pi^{-}) [GeV/c^{2}];Candidates / %.0f MeV",
-                          bin_width * 1000.),
-                     nbins, mlo, mhi);
-  h->SetLineColor(kBlue + 1);
-  h->SetLineWidth(2);
-  h->Sumw2();
-  tree->Draw("K_S0_mass>>h_kshort_mass", "", "goff");
+  gStyle->SetOptStat(0);
+  gStyle->SetTextFont(42);
 
   // -------------------------------------------------------------------------
   // Fit: Gaussian signal + 2nd-order polynomial background
-  //   f(x) = A * Gaus(x; mu, sigma) + p0 + p1*(x-0.5) + p2*(x-0.5)^2
-  // Centering polynomial at 0.5 GeV reduces parameter correlations.
   // -------------------------------------------------------------------------
   TF1 *ftot = new TF1("ftot",
     "[0]*TMath::Gaus(x,[1],[2],true) + [3] + [4]*(x-0.5) + [5]*(x-0.5)*(x-0.5)",
     fit_lo, fit_hi);
 
   ftot->SetParNames("SigAmp", "Mean", "Sigma", "p0", "p1", "p2");
-  // SigAmp: yield*bin_width (norm Gaus integrates to 1).
-  // Background ~1e6 counts/bin at 0.5 GeV, rising left-to-right => p1 > 0.
   ftot->SetParameter(0, 1e4);
   ftot->SetParameter(1, pdg_mass);
   ftot->SetParameter(2, 0.006);
   ftot->SetParameter(3, 1e6);
   ftot->SetParameter(4, 1e6);
   ftot->SetParameter(5, -5e5);
-  ftot->SetParLimits(0, 0, 1e8);              // signal must be positive
-  ftot->SetParLimits(1, 0.480, 0.515);        // mean constrained near PDG
-  ftot->SetParLimits(2, 0.002, 0.015);        // sigma in [2, 15] MeV
+  ftot->SetParLimits(0, 0, 1e8);
+  ftot->SetParLimits(1, 0.480, 0.515);
+  ftot->SetParLimits(2, 0.002, 0.015);
 
-  h->Fit(ftot, "R0Q");  // chi-squared fit, range, no draw yet
+  h->Fit(ftot, "R0Q");
 
-  // Background component only
   TF1 *fbkg = new TF1("fbkg",
     "[0] + [1]*(x-0.5) + [2]*(x-0.5)*(x-0.5)",
     fit_lo, fit_hi);
@@ -63,57 +62,73 @@ void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_ru
   ftot->SetLineColor(kRed);
   ftot->SetLineWidth(2);
 
-  // Signal yield = integral of Gaussian component (bins in fit range)
-  double sigma    = ftot->GetParameter(2);
-  double sigamp   = ftot->GetParameter(0);
-  double sigamp_e = ftot->GetParError(0);
-  // Gaussian integral: A/sqrt(2pi)/sigma * integral = A (normalized form)
-  // bin yield = A * bin_width / sqrt(2pi) / sigma ... but TMath::Gaus(norm=true)
-  // integrates to 1 over full range, so yield = A / bin_width * bin_width ...
-  // With norm=true: Gaus(x,mu,sigma,true) = (1/sqrt(2pi)/sigma)*exp(...)
-  // => integral over all x = 1, so signal counts = SigAmp / bin_width
-  double yield   = sigamp / bin_width;
-  double yield_e = sigamp_e / bin_width;
-
   double mean    = ftot->GetParameter(1);
   double mean_e  = ftot->GetParError(1);
+  double sigma   = ftot->GetParameter(2);
   double sigma_e = ftot->GetParError(2);
+  double sigamp  = ftot->GetParameter(0);
+  double sigamp_e= ftot->GetParError(0);
+  double yield   = sigamp   / bin_width;
+  double yield_e = sigamp_e / bin_width;
   double chi2ndf = ftot->GetChisquare() / ftot->GetNDF();
+
+  std::cout << "Mean   = " << mean  * 1000. << " +/- " << mean_e  * 1000. << " MeV" << std::endl;
+  std::cout << "Sigma  = " << sigma * 1000. << " +/- " << sigma_e * 1000. << " MeV" << std::endl;
+  std::cout << "Yield  = " << yield << " +/- " << yield_e << std::endl;
+  std::cout << "chi2/ndf = " << chi2ndf << std::endl;
 
   // -------------------------------------------------------------------------
   // Canvas 1: data + fit
   // -------------------------------------------------------------------------
-  TCanvas *c1 = new TCanvas("c1_kshort_fit", "K_{S}^{0} Mass Fit", 800, 600);
-  c1->SetLeftMargin(0.12);
+  TCanvas *c1 = new TCanvas("c1_kshort_fit", "K_{S}^{0} Mass Fit", 800, 680);
 
+  // Plot pad leaves a caption strip at the bottom
+  TPad *pad1 = new TPad("pad1", "", 0.0, 0.10, 1.0, 1.0);
+  pad1->SetLeftMargin(0.13);
+  pad1->SetRightMargin(0.05);
+  pad1->SetTopMargin(0.05);
+  pad1->SetBottomMargin(0.13);
+  pad1->Draw();
+  pad1->cd();
+
+  h->SetLineColor(kBlue + 1);
+  h->SetLineWidth(2);
+  // Extra headroom at top so the legend doesn't sit on data
+  h->SetMaximum(h->GetMaximum() + (h->GetMaximum() - h->GetMinimum()) * 0.45);
   h->Draw("E");
   ftot->Draw("same");
   fbkg->Draw("same");
 
-  TLine *pdg = new TLine(pdg_mass, gPad->GetUymin(), pdg_mass, gPad->GetUymax());
+  TLine *pdg = new TLine(pdg_mass, pad1->GetUymin(), pdg_mass, pad1->GetUymax());
   pdg->SetLineColor(kGreen + 2);
   pdg->SetLineStyle(3);
   pdg->SetLineWidth(2);
   pdg->Draw();
 
-  TLegend *leg1 = new TLegend(0.55, 0.65, 0.88, 0.88);
+  // Legend in upper-left headroom (data there is ~750k, well below headroom)
+  TLegend *leg1 = new TLegend(0.14, 0.76, 0.50, 0.94);
   leg1->SetBorderSize(0);
-  leg1->AddEntry(h,    "Data",                      "lpe");
-  leg1->AddEntry(ftot, "Gauss + poly bkg",          "l");
-  leg1->AddEntry(fbkg, "Poly background",           "l");
-  leg1->AddEntry(pdg,  Form("PDG  %.1f MeV", pdg_mass * 1000.), "l");
+  leg1->SetTextFont(42);
+  leg1->SetTextSize(0.038);
+  leg1->AddEntry(h,    "Data",          "lpe");
+  leg1->AddEntry(ftot, "Signal + bkg",  "l");
+  leg1->AddEntry(fbkg, "Background",    "l");
+  leg1->AddEntry(pdg,  Form("PDG %.1f MeV", pdg_mass * 1000.), "l");
   leg1->Draw();
 
-  // Stat box
-  TPaveText *pt = new TPaveText(0.13, 0.60, 0.50, 0.88, "NDC");
-  pt->SetFillStyle(0);
-  pt->SetBorderSize(0);
-  pt->SetTextAlign(12);
-  pt->AddText(Form("#mu = %.2f #pm %.2f MeV", mean * 1000., mean_e * 1000.));
-  pt->AddText(Form("#sigma = %.2f #pm %.2f MeV", sigma * 1000., sigma_e * 1000.));
-  pt->AddText(Form("Yield = %.0f #pm %.0f", yield, yield_e));
-  pt->AddText(Form("#chi^{2}/ndf = %.1f", chi2ndf));
-  pt->Draw();
+  // Caption strip: two TLatex lines drawn in canvas coordinates
+  c1->cd();
+  TLatex lat;
+  lat.SetNDC();
+  lat.SetTextFont(42);
+  lat.SetTextSize(0.032);
+  lat.SetTextAlign(11);
+  lat.DrawLatex(0.13, 0.068,
+    Form("#mu = %.2f #pm %.2f MeV      #sigma = %.2f #pm %.2f MeV",
+         mean * 1000., mean_e * 1000., sigma * 1000., sigma_e * 1000.));
+  lat.DrawLatex(0.13, 0.022,
+    Form("Yield = %.0f #pm %.0f      #chi^{2}/ndf = %.1f",
+         yield, yield_e, chi2ndf));
 
   c1->SaveAs((tag + "_fit.pdf").c_str());
 
@@ -121,18 +136,18 @@ void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_ru
   // Canvas 2: background-subtracted
   // -------------------------------------------------------------------------
   TH1F *hsub = (TH1F *) h->Clone("hsub");
-  hsub->SetTitle(Form(";m(#pi^{+}#pi^{-}) [GeV/c^{2}];Candidates / %.0f MeV (bkg subtracted)",
+  hsub->SetTitle(Form(";m(#pi^{+}#pi^{-}) [GeV/c^{2}];Candidates / %.0f MeV (bkg sub.)",
                       bin_width * 1000.));
+  hsub->SetMaximum(-1111);  // reset inherited display scale before subtraction
 
   for (int i = 1; i <= hsub->GetNbinsX(); i++)
   {
-    double x    = hsub->GetBinCenter(i);
-    double bkg  = fbkg->Eval(x);
-    double val  = hsub->GetBinContent(i);
-    double err  = hsub->GetBinError(i);
+    double x   = hsub->GetBinCenter(i);
+    double val = h->GetBinContent(i);
+    double err = h->GetBinError(i);
     if (x >= fit_lo && x <= fit_hi)
     {
-      hsub->SetBinContent(i, val - bkg);
+      hsub->SetBinContent(i, val - fbkg->Eval(x));
       hsub->SetBinError(i, err);
     }
     else
@@ -142,20 +157,26 @@ void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_ru
     }
   }
 
-  TF1 *fsig = new TF1("fsig",
-    "[0]*TMath::Gaus(x,[1],[2],true)",
-    fit_lo, fit_hi);
+  TF1 *fsig = new TF1("fsig", "[0]*TMath::Gaus(x,[1],[2],true)", fit_lo, fit_hi);
   fsig->SetParameter(0, sigamp);
   fsig->SetParameter(1, mean);
   fsig->SetParameter(2, sigma);
   fsig->SetLineColor(kRed);
   fsig->SetLineWidth(2);
 
-  TCanvas *c2 = new TCanvas("c2_kshort_sub", "K_{S}^{0} Background Subtracted", 800, 600);
-  c2->SetLeftMargin(0.12);
+  TCanvas *c2 = new TCanvas("c2_kshort_sub", "K_{S}^{0} Background Subtracted", 800, 680);
+
+  TPad *pad2 = new TPad("pad2", "", 0.0, 0.10, 1.0, 1.0);
+  pad2->SetLeftMargin(0.13);
+  pad2->SetRightMargin(0.05);
+  pad2->SetTopMargin(0.05);
+  pad2->SetBottomMargin(0.13);
+  pad2->Draw();
+  pad2->cd();
 
   hsub->SetLineColor(kBlue + 1);
   hsub->SetLineWidth(2);
+  hsub->SetMaximum(hsub->GetMaximum() * 1.35);
   hsub->Draw("E");
   fsig->Draw("same");
 
@@ -170,17 +191,27 @@ void plotKShortMass(const std::string &infile = "root/outputKFParticle_KShort_ru
   pdg2->SetLineWidth(2);
   pdg2->Draw();
 
-  TLegend *leg2 = new TLegend(0.55, 0.70, 0.88, 0.88);
+  TLegend *leg2 = new TLegend(0.14, 0.79, 0.50, 0.94);
   leg2->SetBorderSize(0);
-  leg2->AddEntry(hsub, "Data #minus background", "lpe");
-  leg2->AddEntry(fsig, "Gaussian fit",           "l");
-  leg2->AddEntry(pdg2, Form("PDG  %.1f MeV", pdg_mass * 1000.), "l");
+  leg2->SetTextFont(42);
+  leg2->SetTextSize(0.038);
+  leg2->AddEntry(hsub, "Data #minus bkg", "lpe");
+  leg2->AddEntry(fsig, "Gaussian fit",    "l");
+  leg2->AddEntry(pdg2, Form("PDG %.1f MeV", pdg_mass * 1000.), "l");
   leg2->Draw();
 
-  c2->SaveAs((tag + "_subtracted.pdf").c_str());
+  c2->cd();
+  TLatex lat2;
+  lat2.SetNDC();
+  lat2.SetTextFont(42);
+  lat2.SetTextSize(0.032);
+  lat2.SetTextAlign(11);
+  lat2.DrawLatex(0.13, 0.068,
+    Form("#mu = %.2f #pm %.2f MeV      #sigma = %.2f #pm %.2f MeV",
+         mean * 1000., mean_e * 1000., sigma * 1000., sigma_e * 1000.));
+  lat2.DrawLatex(0.13, 0.022,
+    Form("Yield = %.0f #pm %.0f      #chi^{2}/ndf = %.1f",
+         yield, yield_e, chi2ndf));
 
-  std::cout << "Mean   = " << mean  * 1000. << " +/- " << mean_e  * 1000. << " MeV" << std::endl;
-  std::cout << "Sigma  = " << sigma * 1000. << " +/- " << sigma_e * 1000. << " MeV" << std::endl;
-  std::cout << "Yield  = " << yield << " +/- " << yield_e << std::endl;
-  std::cout << "chi2/ndf = " << chi2ndf << std::endl;
+  c2->SaveAs((tag + "_subtracted.pdf").c_str());
 }
