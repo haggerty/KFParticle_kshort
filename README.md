@@ -61,14 +61,28 @@ Output root files are collected in `root/`.
 
 ## Plotting
 
-The plot macro uses TChain — no hadd step needed (hadd fails at this scale due to
-ROOT's 1 GB TBuffer limit when merging thousands of tree files).
+Plotting is split into two steps to avoid re-reading 10k tree files on every style iteration.
+
+**Step 1 — fill histograms (slow, run once on SDCC):**
 
 ```bash
-root -b -q 'plotKShortMass.C("root/outputKFParticle_KShort_run3pp_*.root","KShort_run3pp_10k")'
+root -b -q 'fillKShortHists.C("root/outputKFParticle_KShort_run3pp_*.root","KShort_hists.root")'
 ```
 
-Outputs `{tag}_fit.pdf` and `{tag}_subtracted.pdf` in the working directory.
+Chains all tree files and writes a small root file containing just the `h_kshort_mass` TH1F.
+Re-run only if the binning changes or new data is added.
+
+**Step 2 — fit and plot (fast, iterate freely):**
+
+```bash
+root -b -q 'plotKShortMass.C("KShort_hists.root","KShort_run3pp_10k")'
+```
+
+Reads the pre-filled histogram, fits, and writes `{tag}_fit.pdf` and `{tag}_subtracted.pdf`.
+Runs in under a second regardless of how many input files were used.
+
+> Note: `hadd` on 10k tree files exceeds ROOT's 1 GB TBuffer limit. The TChain approach
+> in `fillKShortHists.C` avoids this.
 
 ## Reconstruction settings
 
