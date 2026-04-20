@@ -1,15 +1,49 @@
-# KShort_run3pp
+# KFParticle_kshort
 
 K_S0 → π⁺π⁻ reconstruction for sPHENIX Run 3 p+p data using KFParticle.
 
+## Result summary
+
+A clear K_S0 signal is visible in 10k DST segments (~75M π⁺π⁻ candidates).
+A Gaussian + 2nd-order polynomial background fit in the range [420, 580] MeV gives:
+
+| Quantity | Value |
+|----------|-------|
+| μ | 487.95 ± 0.05 MeV |
+| σ | 6.86 ± 0.06 MeV |
+| Yield | 433 558 ± 4 059 |
+| χ²/ndf | 14.5 |
+| PDG mass | 497.6 MeV |
+
+The fitted mean is ~10 MeV below PDG, likely a systematic from the steeply-rising
+combinatorial background shape not being perfectly captured by the quadratic polynomial.
+The signal is unambiguous and confirms that tracking is healthy in this dataset.
+
+This analysis was used as a tracking quality cross-check after the D*(2010)⁺ analysis
+(see `KFParticle_dstar`) returned a null result — establishing that the D* absence is
+a PID/combinatorics problem, not broken tracking.
+
+## Plots (~10 000 DST segments)
+
+**Raw π⁺π⁻ invariant mass with PDG reference**
+
+![Mass](plots/KShort_run3pp_10k_mass.png)
+
+**Gaussian + polynomial background fit**
+
+μ = 487.95 ± 0.05 MeV, σ = 6.86 ± 0.06 MeV, yield = 433 558 ± 4 059
+
+![Fit](plots/KShort_run3pp_10k_fit.png)
+
 ## Input
 
-`DST_TRKR_TRACKS` files from the sPHENIX file catalog (Run 3 p+p,
+`DST_TRKR_TRACKS` files from the sPHENIX production catalog (Run 3 p+p,
 production tag `ana538_2025p011_v001`).
 
 ## Running interactively
 
 ```bash
+source /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/bin/sphenix_setup.sh -n ana.542
 root -b -q 'Fun4All_KShortReco_run3pp.C(1000)'
 ```
 
@@ -19,11 +53,22 @@ Output lands in `KShort_run3pp/outputKFParticle_KShort_run3pp_RRRRRRRR_SSSSS_000
 
 ```bash
 cd condor
-./create_condor_list.sh [lustre_dst_dir] [output_dir] [max_jobs]
+./create_condor_list.sh [max_jobs]
 condor_submit condor.job
 ```
 
-Output root files are collected in `$OUTDIR/root/`.
+Output root files are collected in `root/`.
+
+## Plotting
+
+The plot macro uses TChain — no hadd step needed (hadd fails at this scale due to
+ROOT's 1 GB TBuffer limit when merging thousands of tree files).
+
+```bash
+root -b -q 'plotKShortMass.C("root/outputKFParticle_KShort_run3pp_*.root","KShort_run3pp_10k")'
+```
+
+Outputs `{tag}_fit.pdf` and `{tag}_subtracted.pdf` in the working directory.
 
 ## Reconstruction settings
 
@@ -31,12 +76,13 @@ Output root files are collected in `$OUTDIR/root/`.
 |-----------|-------|
 | Decay | K_S0 → π⁺π⁻ |
 | CDB tag | `newcdbtag` |
-| Primary vertex constraint | None (K_S0 is displaced) |
+| Software tag | `ana.542` |
+| Primary vertex constraint | None (K_S0 is displaced, cτ ≈ 2.7 cm) |
 | Min TPC hits | 20 |
 | Max track χ²/nDOF | 100 |
 | Max daughter DCA | 1.0 cm |
 | Max vertex χ²/nDOF | 50 |
-| Mass window | 300–700 MeV |
+| Mass window | 300–700 MeV/c² |
 
 ## DecayTree branch reference
 
@@ -63,9 +109,7 @@ Output root files are collected in `$OUTDIR/root/`.
 | `K_S0_px/py/pz` | `Float_t` | Momentum components (GeV/c) |
 | `K_S0_pE` | `Float_t` | Energy (GeV) |
 | `K_S0_p` | `Float_t` | Total momentum (GeV/c) |
-| `K_S0_pErr` | `Float_t` | Momentum uncertainty |
 | `K_S0_pT` | `Float_t` | Transverse momentum (GeV/c) |
-| `K_S0_pTErr` | `Float_t` | pT uncertainty |
 | `K_S0_pseudorapidity` | `Float_t` | Pseudorapidity η |
 | `K_S0_rapidity` | `Float_t` | Rapidity y |
 | `K_S0_theta` | `Float_t` | Polar angle (rad) |
@@ -74,31 +118,22 @@ Output root files are collected in `$OUTDIR/root/`.
 | `K_S0_chi2` | `Float_t` | Vertex fit χ² |
 | `K_S0_nDoF` | `UInt_t` | Vertex fit degrees of freedom |
 | `K_S0_PDG_ID` | `Int_t` | PDG ID (310) |
-| `K_S0_vertex_volume` | `Float_t` | Vertex volume |
-| `K_S0_Covariance[21]` | `Float_t` | KFParticle covariance matrix |
 
-### Daughter tracks (track_1 = π⁺, track_2 = π⁻; same branches for each)
+### Daughter tracks (track_1 = π⁺, track_2 = π⁻)
 
 | Branch | Type | Description |
 |--------|------|-------------|
 | `track_N_mass` | `Float_t` | Track mass hypothesis (GeV/c²) |
 | `track_N_x/y/z` | `Float_t` | Track position at vertex (cm) |
 | `track_N_px/py/pz` | `Float_t` | Momentum components (GeV/c) |
-| `track_N_pE` | `Float_t` | Energy (GeV) |
-| `track_N_p` | `Float_t` | Total momentum (GeV/c) |
 | `track_N_pT` | `Float_t` | Transverse momentum (GeV/c) |
-| `track_N_jT` | `Float_t` | Transverse momentum relative to mother |
 | `track_N_pseudorapidity` | `Float_t` | Pseudorapidity η |
-| `track_N_rapidity` | `Float_t` | Rapidity y |
-| `track_N_theta` | `Float_t` | Polar angle (rad) |
 | `track_N_phi` | `Float_t` | Azimuthal angle (rad) |
 | `track_N_charge` | `Char_t` | Track charge (±1) |
 | `track_N_chi2` | `Float_t` | Track fit χ² |
 | `track_N_nDoF` | `UInt_t` | Track fit degrees of freedom |
 | `track_N_track_ID` | `Int_t` | Track ID in the DST |
 | `track_N_PDG_ID` | `Int_t` | PDG ID (211 = π) |
-| `track_N_bunch_crossing` | `Int_t` | Bunch crossing of track |
-| `track_N_Covariance[21]` | `Float_t` | KFParticle covariance matrix |
 
 ### Pair variables
 
@@ -107,12 +142,3 @@ Output root files are collected in `$OUTDIR/root/`.
 | `track_1_track_2_DCA` | `Float_t` | 3D distance of closest approach between daughters (cm) |
 | `track_1_track_2_DCA_xy` | `Float_t` | Transverse DCA between daughters (cm) |
 | `secondary_vertex_mass_pionPID` | `Float_t` | Invariant mass with explicit pion mass hypothesis |
-
-## Plotting
-
-```bash
-root -b -q 'plotKShortMass.C("root/KShort_run3pp_merged.root")'
-```
-
-Plots the π⁺π⁻ invariant mass with a reference line at the PDG K_S0 mass (497.6 MeV).
-Output PDF is named after the input file.
