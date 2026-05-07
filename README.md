@@ -89,7 +89,7 @@ Plotting is split into two steps to avoid re-reading 10k tree files on every sty
 **Step 1 — fill histograms (slow, run once on SDCC):**
 
 ```bash
-root -b -q 'fillKShortHists.C("root/outputKFParticle_KShort_run3pp_*.root","KShort_hists.root")'
+root -b -q 'fillKShortHists.C("root/outputKFParticle_KShort_run3pp_*.root","root/KShort_hists.root")'
 ```
 
 Chains all tree files and writes a small root file containing just the `h_kshort_mass` TH1F.
@@ -98,7 +98,7 @@ Re-run only if the binning changes or new data is added.
 **Step 2 — fit and plot (fast, iterate freely):**
 
 ```bash
-root -b -q 'plotKShortMass.C("KShort_hists.root","plots/KShort_run3pp_10k")'
+root -b -q 'plotKShortMass.C("root/KShort_hists.root","plots/KShort_run3pp_10k")'
 ```
 
 Reads the pre-filled histogram, fits, and writes `{tag}_fit.pdf` and `{tag}_subtracted.pdf`.

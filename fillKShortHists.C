@@ -5,7 +5,7 @@
 //   root -b -q 'fillKShortHists.C("root/outputKFParticle_KShort_run3pp_*.root","KShort_hists.root")'
 
 void fillKShortHists(const std::string &infile  = "root/outputKFParticle_KShort_run3pp_*.root",
-                     const std::string &outfile = "KShort_hists.root")
+                     const std::string &outfile = "root/KShort_hists.root")
 {
   TChain *tree = new TChain("DecayTree");
   int nadded = tree->Add(infile.c_str());

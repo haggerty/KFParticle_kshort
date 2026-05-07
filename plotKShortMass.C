@@ -4,7 +4,7 @@
 // Usage:
 //   root -b -q 'plotKShortMass.C("KShort_hists.root","KShort_run3pp_10k")'
 
-void plotKShortMass(const std::string &histfile = "KShort_hists.root",
+void plotKShortMass(const std::string &histfile = "root/KShort_hists.root",
                     const std::string &tag      = "KShort_run3pp_10k")
 {
   TFile *fin = TFile::Open(histfile.c_str(), "READ");
