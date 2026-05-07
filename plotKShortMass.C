@@ -98,6 +98,7 @@ void plotKShortMass(const std::string &histfile = "root/KShort_hists.root",
   h->Draw("E");
   ftot->Draw("same");
   fbkg->Draw("same");
+  c1->Update();  // force paint so GetUymin/GetUymax are valid in batch mode
 
   TLine *pdg = new TLine(pdg_mass, pad1->GetUymin(), pdg_mass, pad1->GetUymax());
   pdg->SetLineColor(kGreen + 2);
@@ -179,6 +180,7 @@ void plotKShortMass(const std::string &histfile = "root/KShort_hists.root",
   hsub->SetMaximum(hsub->GetMaximum() * 1.35);
   hsub->Draw("E");
   fsig->Draw("same");
+  c2->Update();  // force paint so GetUymin/GetUymax are valid in batch mode
 
   TLine *zero = new TLine(fit_lo, 0, fit_hi, 0);
   zero->SetLineColor(kGray + 1);
