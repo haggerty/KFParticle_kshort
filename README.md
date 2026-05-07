@@ -75,7 +75,7 @@ Re-run only if the binning changes or new data is added.
 **Step 2 — fit and plot (fast, iterate freely):**
 
 ```bash
-root -b -q 'plotKShortMass.C("KShort_hists.root","KShort_run3pp_10k")'
+root -b -q 'plotKShortMass.C("KShort_hists.root","plots/KShort_run3pp_10k")'
 ```
 
 Reads the pre-filled histogram, fits, and writes `{tag}_fit.pdf` and `{tag}_subtracted.pdf`.
