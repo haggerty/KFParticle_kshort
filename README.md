@@ -35,6 +35,29 @@ a PID/combinatorics problem, not broken tracking.
 
 ![Fit](plots/KShort_run3pp_10k_fit.png)
 
+## Run 79510 baseline (default field map)
+
+Single-run plots using the default tracking field map
+(`8e4d6c3b1660540a658da3a275af2bde_sphenix3dtrackingmapxyz.root` from CVMFS),
+produced as a baseline for comparison against a planned test production using
+the measured field map (`sphenix_measured_fieldmap_cartesian.root`).
+
+| Quantity | Value |
+|----------|-------|
+| Run | 79510 |
+| DST segments | 3800 (complete production for this run) |
+| Events in DSTs | 3 767 590 |
+| Triggered events in run DB | ~23 929 261 |
+| DST coverage | ~16% of GL1 triggers (trigger-filtered production) |
+
+Plots: [`plots/KShort_run79510_defaultmap_fit.pdf`](plots/KShort_run79510_defaultmap_fit.pdf),
+[`plots/KShort_run79510_defaultmap_subtracted.pdf`](plots/KShort_run79510_defaultmap_subtracted.pdf)
+
+Generate with:
+```bash
+./make_run79510_defaultmap_plots.sh
+```
+
 ## Input
 
 `DST_TRKR_TRACKS` files from the sPHENIX production catalog (Run 3 p+p,
