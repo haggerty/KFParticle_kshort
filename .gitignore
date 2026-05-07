@@ -2,8 +2,9 @@
 *.root
 *.list
 
-# PDF plots
+# PDF plots (tracked in plots/ but not elsewhere)
 *.pdf
+!plots/*.pdf
 
 # ACLiC compiled macro artifacts
 *.so
