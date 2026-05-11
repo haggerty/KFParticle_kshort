@@ -2,13 +2,15 @@
 # Generates condor.list for Fun4All_KShortReco_run3pp condor submission.
 #
 # Usage:
-#   ./create_condor_list.sh [max_jobs]
+#   ./create_condor_list.sh [max_jobs] [run_number] [dst_base]
 #
-# The DST and output paths are hardcoded to their standard locations.
-# max_jobs defaults to 0 (no limit).
+# max_jobs    defaults to 0 (no limit)
+# run_number  optional 8-digit run number to restrict to a single run
+# dst_base    optional path to DST_TRKR_TRACKS directory (default: standard ana538 production)
 
 MAX_JOBS=${1:-0}
-DST_BASE=/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS
+RUN_FILTER=${2:-}
+DST_BASE=${3:-/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS}
 OUTDIR=/sphenix/user/$(whoami)/analysis/2026-03-23/KShort_run3pp
 
 this_script=$(readlink -f $0)
@@ -21,6 +23,7 @@ mkdir -p $LOGDIR || { echo "ERROR: could not create $LOGDIR"; exit 1; }
 echo "Scanning: $DST_BASE"
 echo "Output dir: $OUTDIR ($(ls -d $OUTDIR))"
 echo "Log dir: $LOGDIR ($(ls -d $LOGDIR))"
+[[ -n $RUN_FILTER ]] && echo "Run filter: $RUN_FILTER" || echo "Run filter: none"
 [[ $MAX_JOBS -gt 0 ]] && echo "Job limit: $MAX_JOBS" || echo "Job limit: none"
 
 rm -f condor.list
@@ -31,6 +34,7 @@ filelist=$(mktemp)
 for rundir in $DST_BASE/run_*/; do
     ls -1 "${rundir}" 2>/dev/null \
         | grep '^DST_TRKR_TRACKS_.*\.root$' \
+        | { [[ -n $RUN_FILTER ]] && grep "${RUN_FILTER}" || cat; } \
         | sed "s|^|${rundir}|"
 done | sort > "$filelist"
 
