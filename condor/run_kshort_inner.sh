@@ -21,7 +21,7 @@ echo "CDB tag    : $cdbtag"
 
 root.exe -q -b "Fun4All_KShortReco_run3pp.C(0,\"${inbase}\",\"${indir}\",0,\"${cdbtag}\")"
 
-mkdir -p $outdir/root
-find . -name "outputKFParticle_*.root" -exec mv {} $outdir/root/ \;
+mkdir -p $outdir/root/$cdbtag
+find . -name "outputKFParticle_*.root" -exec mv {} $outdir/root/$cdbtag/ \;
 
 echo "Script done"
