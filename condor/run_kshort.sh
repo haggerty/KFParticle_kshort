@@ -5,6 +5,7 @@
 # Arguments:
 #   $1 : full path to input DST file
 #   $2 : output directory
+#   $3 : field map (file path or CDB key, default: FIELDMAP_TRACKING)
 
 export USER="$(id -u -n)"
 export LOGNAME=${USER}
@@ -30,6 +31,6 @@ else
     exit -1
 fi
 
-./run_kshort_inner.sh $*
+./run_kshort_inner.sh "$@"
 
 echo "wrapper script done"

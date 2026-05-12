@@ -11,6 +11,7 @@
 MAX_JOBS=${1:-0}
 RUN_FILTER=${2:-}
 DST_BASE=${3:-/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS}
+FIELDMAP=${4:-FIELDMAP_TRACKING}
 OUTDIR=/sphenix/user/$(whoami)/analysis/2026-03-23/KShort_run3pp
 
 this_script=$(readlink -f $0)
@@ -25,6 +26,7 @@ echo "Output dir: $OUTDIR ($(ls -d $OUTDIR))"
 echo "Log dir: $LOGDIR ($(ls -d $LOGDIR))"
 [[ -n $RUN_FILTER ]] && echo "Run filter: $RUN_FILTER" || echo "Run filter: none"
 [[ $MAX_JOBS -gt 0 ]] && echo "Job limit: $MAX_JOBS" || echo "Job limit: none"
+echo "Field map : $FIELDMAP"
 
 rm -f condor.list
 
@@ -49,7 +51,7 @@ while read dstfile; do
     outfile=${LOGDIR}/condor-${lfn%.root}.out
     errfile=${LOGDIR}/condor-${lfn%.root}.err
     logfile=/tmp/$(whoami)-condor-${lfn%.root}.log
-    echo "$dstfile $OUTDIR $outfile $errfile $logfile $this_dir" >> condor.list
+    echo "$dstfile $OUTDIR $outfile $errfile $logfile $this_dir $FIELDMAP" >> condor.list
 done < "$filelist"
 
 nfiles=$(wc -l < condor.list 2>/dev/null || echo 0)

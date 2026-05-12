@@ -1,6 +1,6 @@
 Universe        = vanilla
 Executable      = $(rundir)/run_kshort.sh
-Arguments       = $(infile) $(outdir)
+Arguments       = $(infile) $(outdir) $(fieldmap)
 Output          = $(outfile)
 Error           = $(errfile)
 Log             = $(condorlogfile)
@@ -9,4 +9,4 @@ PeriodicHold    = (NumJobStarts >= 1 && JobStatus == 1)
 job_lease_duration = 3600
 request_memory = 4096MB
 
-Queue infile, outdir, outfile, errfile, condorlogfile, rundir from condor.list
+Queue infile, outdir, outfile, errfile, condorlogfile, rundir, fieldmap from condor.list
