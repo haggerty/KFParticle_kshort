@@ -52,7 +52,7 @@ void Fun4All_KShortReco_run3pp(
     const std::string &inputDST = "DST_TRKR_TRACKS_run3pp_ana538_2025p011_v001-00079709-08158.root",
     const std::string &inputDir = "/sphenix/lustre01/sphnxpro/production/run3pp/physics/ana538_2025p011_v001/DST_TRKR_TRACKS/run_00079700_00079800/",
     const int nSkip = 0,
-    const std::string &fieldmap = "FIELDMAP_TRACKING")
+    const std::string &cdbtag = "newcdbtag")
 {
   std::string inputFile = inputDir + inputDST;
 
@@ -89,7 +89,7 @@ void Fun4All_KShortReco_run3pp(
   rc->set_IntFlag("RUNNUMBER", runnumber);
 
   Enable::CDB = true;
-  rc->set_StringFlag("CDB_GLOBALTAG", "newcdbtag");
+  rc->set_StringFlag("CDB_GLOBALTAG", cdbtag);
   rc->set_uint64Flag("TIMESTAMP", runnumber);
 
   std::string geofile = CDBInterface::instance()->getUrl("Tracking_Geometry");
@@ -128,7 +128,7 @@ void Fun4All_KShortReco_run3pp(
   kfparticle->setDecayDescriptor("K_S0 -> pi^+ pi^-");
 
   // Node / input configuration
-  kfparticle->magFieldFile(fieldmap);
+  kfparticle->magFieldFile("FIELDMAP_TRACKING");
   kfparticle->usePID(false);
   kfparticle->allowZeroMassTracks();
   kfparticle->dontUseGlobalVertex(true);

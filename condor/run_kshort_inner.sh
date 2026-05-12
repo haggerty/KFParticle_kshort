@@ -4,22 +4,22 @@
 # Arguments:
 #   $1 : full path to input DST file
 #   $2 : output directory
-#   $3 : field map (file path or CDB key, default: FIELDMAP_TRACKING)
+#   $3 : CDB global tag (default: newcdbtag)
 
 source /cvmfs/sphenix.sdcc.bnl.gov/alma9.2-gcc-14.2.0/opt/sphenix/core/bin/sphenix_setup.sh -n ana.542
 
 infile=$1
 outdir=$2
-fieldmap=${3:-FIELDMAP_TRACKING}
+cdbtag=${3:-newcdbtag}
 inbase=$(basename $infile)
 indir=$(dirname $infile)/
 
 echo "OFFLINE_MAIN: $OFFLINE_MAIN"
 echo "Input file : $infile"
 echo "Output dir : $outdir"
-echo "Field map  : $fieldmap"
+echo "CDB tag    : $cdbtag"
 
-root.exe -q -b "Fun4All_KShortReco_run3pp.C(0,\"${inbase}\",\"${indir}\",0,\"${fieldmap}\")"
+root.exe -q -b "Fun4All_KShortReco_run3pp.C(0,\"${inbase}\",\"${indir}\",0,\"${cdbtag}\")"
 
 mkdir -p $outdir/root
 find . -name "outputKFParticle_*.root" -exec mv {} $outdir/root/ \;

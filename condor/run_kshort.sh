@@ -5,7 +5,7 @@
 # Arguments:
 #   $1 : full path to input DST file
 #   $2 : output directory
-#   $3 : field map (file path or CDB key, default: FIELDMAP_TRACKING)
+#   $3 : CDB global tag (default: newcdbtag)
 
 export USER="$(id -u -n)"
 export LOGNAME=${USER}
