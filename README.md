@@ -19,10 +19,6 @@ The fitted mean is ~10 MeV below PDG, likely a systematic from the steeply-risin
 combinatorial background shape not being perfectly captured by the quadratic polynomial.
 The signal is unambiguous and confirms that tracking is healthy in this dataset.
 
-This analysis was used as a tracking quality cross-check after the D*(2010)⁺ analysis
-(see `KFParticle_dstar`) returned a null result — establishing that the D* absence is
-a PID/combinatorics problem, not broken tracking.
-
 ## Plots (~10 000 DST segments)
 
 **Raw π⁺π⁻ invariant mass with PDG reference**
