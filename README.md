@@ -58,6 +58,44 @@ Generate with:
 ./make_run79510_defaultmap_plots.sh
 ```
 
+## Run 79516 field map comparison
+
+K_S0 mass comparison between the default tracking field map (`newcdbtag`)
+and a measured field map (`FieldMapTest`, CDB tag for test production
+`ana548_FieldMapTest_v666`). 1000 DST segments processed with each map.
+
+Output root files are separated by CDB tag to avoid collisions:
+- Default map → `root/newcdbtag/`
+- Measured map → `root/FieldMapTest/`
+
+| Dataset | DST base | CDB tag |
+|---------|----------|---------|
+| Default map | `ana538_2025p011_v001/DST_TRKR_TRACKS` | `newcdbtag` |
+| Measured map | `ana548_FieldMapTest_v666/DST_TRKR_TRACKS` | `FieldMapTest` |
+
+**Generate plots:**
+```bash
+./make_run79516_defaultmap_plots.sh
+./make_run79516_newmap_plots.sh
+```
+
+**Submit condor jobs:**
+```bash
+cd condor
+
+# Default map (run 79516, 1000 segments)
+./create_condor_list.sh 1000 00079516
+condor_submit condor.job
+
+# Measured map (run 79516, 1000 segments)
+./create_condor_list.sh 1000 00079516 \
+  /sphenix/lustre01/sphnxpro/production/run3pp/physics/ana548_FieldMapTest_v666/DST_TRKR_TRACKS \
+  FieldMapTest
+condor_submit condor.job
+```
+
+Note: the `create_condor_list.sh` arguments are `[max_jobs] [run_number] [dst_base] [cdbtag]`.
+
 ## Input
 
 `DST_TRKR_TRACKS` files from the sPHENIX production catalog (Run 3 p+p,
@@ -76,11 +114,13 @@ Output lands in `KShort_run3pp/outputKFParticle_KShort_run3pp_RRRRRRRR_SSSSS_000
 
 ```bash
 cd condor
-./create_condor_list.sh [max_jobs]
+./create_condor_list.sh [max_jobs] [run_number] [dst_base] [cdbtag]
 condor_submit condor.job
 ```
 
-Output root files are collected in `root/`.
+All arguments are optional; defaults are no limit, all runs, the standard
+`ana538_2025p011_v001` DST path, and CDB tag `newcdbtag`. Output root
+files land in `root/<cdbtag>/`.
 
 ## Plotting
 
